@@ -1,137 +1,154 @@
-// Variables globales
-const carrito = [];
+        // Base de datos simulada
+        const products = [
+            { id: 1, name: "Placa de Video", price: 1500 },
+            { id: 2, name: "Mouse", price: 200 },
+            { id: 3, name: "Teclado", price: 250 },
+            { id: 4, name: "Camara", price: 400 },
+            { id: 5, name: "Monitor", price: 1000 },
+            { id: 6, name: "Escritorio", price: 1200 },
+        ];
 
-const chocolate = {
-  nombre: "Chocolate",
-  precio: 100,
-  cantidad: 1,
-};
-const chupetin = {
-  nombre: "Chupetin",
-  precio: 100,
-  cantidad: 1,
-};
-const galletita = {
-  nombre: "Galletita",
-  precio: 200,
-  cantidad: 1,
-};
-const alfajor = {
-  nombre: "Alfajor",
-  precio: 50,
-  cantidad: 1,
-};
+        // Obtener el carrito desde el almacenamiento local
+        let cart = JSON.parse(localStorage.getItem('cart')) || [];
 
-carrito.push(chocolate);
-carrito.push(chupetin);
-carrito.push(galletita);
-carrito.push(alfajor);
+        // Evento para cargar productos en la lista
+        window.addEventListener('DOMContentLoaded', () => {
+            displayProducts(products);
+            displayCart();
+        });
 
-// Función que se encargue de buscar si un producto existe en nuestro carrito (array)
-function enCarrito(nombrePrompt) {
-  // Find: busca un elemento que cumpla la condición (en este caso el nombre del
-  // del producto con el nombre introducido en el prompt) y devuelve el elemento
-  // o undefined si no lo encuentra
-  return carrito.find((producto) => producto.nombre == nombrePrompt);
-}
+        // Función para mostrar productos en la lista
+        function displayProducts(products) {
+            const productList = document.getElementById('productList');
+            productList.innerHTML = '';
 
-// Función para buscar productos
-function buscar() {
-  const keyword = prompt("¿Qué producto desea buscar?");
-  // Me va a retornar un array con todos los elementos que contengan
-  // la variable "keyword" (string) que lo define el usuario por el prompt
-  const arrayResultados = carrito.filter((el) =>
-    // toLowerCase convierte un string en minúsculas
-    el.nombre.toLowerCase().includes(keyword.toLowerCase())
-  );
-  console.log(arrayResultados);
-}
+            products.forEach(product => {
+                const li = document.createElement('li');
+                li.innerHTML = `
+                    ${product.name} - $${product.price}
+                    <button data-productid="${product.id}" class="addToCartButton">Agregar al carrito</button>
+                `;
+                productList.appendChild(li);
+            });
 
-// Función para agregar un producto al carrito
-function agregar() {
-  // Pido por prompt los datos del producto
-  const nombrePrompt = prompt("Introduzca el nombre del producto:");
-  const precioPrompt = prompt("Introduzca el precio del producto:");
+            // Asignar evento al botón de búsqueda
+            const searchButton = document.getElementById('searchButton');
+            searchButton.addEventListener('click', searchProduct);
 
-  // Creo un objeto con los datos obtenidos del prompt
-  const nuevoProducto = {
-    nombre: nombrePrompt,
-    precio: parseInt(precioPrompt),
-    cantidad: 1,
-  };
+            // Asignar eventos a los botones del carrito
+            const addToCartButtons = document.querySelectorAll('.addToCartButton');
+            addToCartButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    const productId = parseInt(button.getAttribute('data-productid'));
+                    addToCart(productId);
+                });
+            });
 
-  const productoEncontrado = enCarrito(nombrePrompt);
+            const clearCartButton = document.getElementById('clearCartButton');
+            clearCartButton.addEventListener('click', clearCart);
 
-  if (productoEncontrado) {
-    productoEncontrado.cantidad++;
-    productoEncontrado.precio = productoEncontrado.precio * productoEncontrado.cantidad;
-  } else {
-    // Push agrega el producto en el array
-    carrito.push(nuevoProducto);
-  }
+            const buyButton = document.getElementById('buyButton');
+            buyButton.addEventListener('click', buyProducts);
+        }
 
-  // Mensaje de alert exitoso
-  alert("El producto " + nombrePrompt + " fue agregado al carrito.");
-  listar();
-}
+        // Función para agregar productos al carrito
+        function addToCart(productId) {
+            const product = products.find(p => p.id === productId);
 
-// Función para listar los productos del carrito
-function listar() {
-  console.clear();
-  console.log("Productos que hay en el carrito:");
+            if (product) {
+                cart.push(product);
+                updateCart();
+            }
+        }
 
-  // Recorremos los elementos del array carrito
-  carrito.forEach((producto) => {
-    console.log("----------");
-    console.log("Nombre:", producto.nombre);
-    console.log("Precio:", producto.precio);
-    console.log("Cantidad:", producto.cantidad);
-  });
+        // Función para actualizar el carrito en el DOM y en el almacenamiento local
+        function updateCart() {
+            const cartList = document.getElementById('cart');
+            cartList.innerHTML = '';
 
-  // Reduce: Recorre cada elemento y va acumulando una suma de una propiedad
-  // del elemento, en este caso el precio
-  const totalCarrito = carrito.reduce((acu, el) => acu + el.precio, 0);
-  console.log("TOTAL DEL CARRITO: $", totalCarrito);
+            let totalPrice = 0;
 
-  // Map: crea un nuevo array transformando los elementos. En este caso
-  // le agregamos el IVA a los precios
-  const preciosActualizados = carrito.map((producto) => {
-    return {
-      nombre: producto.nombre,
-      precio: producto.precio * 1.25,
-      cantidad: producto.cantidad,
-    };
-  });
-  console.log("Precios actualizados:", preciosActualizados);
+            cart.forEach((product, index) => {
+                const li = document.createElement('li');
+                li.innerHTML = `
+                    ${product.name} - $${product.price}
+                    <button data-index="${index}" class="removeFromCartButton">Quitar</button>
+                `;
+                cartList.appendChild(li);
+                totalPrice += product.price;
+            });
 
-  // Sort: crea un nuevo array reordenando los elementos
-  // En este caso de mayor a menor según el precio
-  const nuevoArrayReordenado = carrito.sort((el1, el2) => {
-    if (el1.precio < el2.precio) {
-      return 1;
-    }
-    if (el1.precio > el2.precio) {
-      return -1;
-    }
-    return 0;
-  });
-  console.log("Nuevo array reordenado:", nuevoArrayReordenado);
-}
+            // Actualizar el precio total
+            document.getElementById('totalPrice').textContent = totalPrice.toFixed(2);
 
-// Función para quitar un producto del carrito
-function quitar() {
-  const nombrePrompt = prompt("¿Qué producto querés quitar?");
+            // Guardar el carrito en el almacenamiento local
+            localStorage.setItem('cart', JSON.stringify(cart));
 
-  const productoEncontrado = enCarrito(nombrePrompt);
+            // Asignar eventos a los botones de quitar
+            const removeFromCartButtons = document.querySelectorAll('.removeFromCartButton');
+            removeFromCartButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    const index = parseInt(button.getAttribute('data-index'));
+                    removeFromCart(index);
+                });
+            });
+        }
 
-  if (productoEncontrado) {
-    const indiceProducto = carrito.indexOf(productoEncontrado);
-    // Una vez obtenemos el índice, lo volamos con splice
-    carrito.splice(indiceProducto, 1);
-    // Mostramos un mensaje al usuario que se ha borrado el producto del carrito
-    alert("El producto " + productoEncontrado.nombre + " fue borrado del carrito.");
-    listar();
-  } else {
-    alert("No se encontró el producto " + nombrePrompt + " en el carrito.");
-  }
-}
+        // Función para mostrar el carrito al cargar la página
+        function displayCart() {
+            const storedCart = JSON.parse(localStorage.getItem('cart')) || [];
+            cart = storedCart;
+            updateCart();
+        }
+
+        // Función para buscar productos
+        function searchProduct() {
+            const searchInput = document.getElementById('searchInput');
+            const searchTerm = searchInput.value.toLowerCase();
+
+            const filteredProducts = products.filter(product =>
+                product.name.toLowerCase().includes(searchTerm)
+            );
+
+            displayProducts(filteredProducts);
+        }
+
+        // Función para listar los productos en el carrito
+        function listCartItems() {
+            alert("Productos en el carrito:\n\n" + cart.map(product => product.name).join("\n"));
+        }
+
+        // Función para vaciar el carrito
+        function clearCart() {
+            cart = [];
+            updateCart();
+        }
+
+        // Función para quitar un producto del carrito
+        function removeFromCart(index) {
+            cart.splice(index, 1);
+            updateCart();
+        }
+
+        // Botón comprar
+        botonComprar.addEventListener("click", (event) => {
+        event.preventDefault();
+        
+        Swal.fire({
+            title: "¿Seguro que desea comprar los productos?",
+            icon: "warning",
+            showCancelButton: true,
+            confirmButtonText: "Sí, seguro",
+            cancelButtonText: "No, no quiero",
+        }).then((result) => {
+            if (result.isConfirmed) {
+                clearCart();
+            Swal.fire({
+                title: "¡Compra realizada!",
+                icon: "success",
+                text: "Su compra fue realizada con éxito.",
+                timer: 1500,
+            });
+            }
+        });
+        });
